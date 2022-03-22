@@ -3,8 +3,7 @@ package com.sensor.analysis
 import cats.effect.kernel.Resource
 import cats.effect.{ExitCode, IO, IOApp}
 import com.github.tototoshi.csv.CSVReader
-import cats.instances.list._
-import cats.syntax.parallel._
+import cats.implicits._
 
 import java.io.File
 
@@ -18,17 +17,18 @@ object SensorAnalysis extends IOApp {
 
   def runScript(path: String): IO[SystemOverview] = {
     csvReadersResource(path).use { csvList =>
-      val tasks: List[IO[SystemOverview]] = csvList.map { csv =>
-        IO {
-          csv
-            .toLazyList()
-            .tail
-            .map(SensorStatistics.from)
-            .foldLeft(SystemOverview(1, Map()))(_ + _)
-        }
+      val systemOverviewIOSeq: IO[List[SystemOverview]] = csvList.parTraverse {
+        csv =>
+          IO {
+            csv
+              .toLazyList()
+              .tail
+              .map(SensorStatistics.from)
+              .foldLeft(SystemOverview(1, Map()))(_ + _)
+          }
       }
 
-      tasks.parSequence.map(_.reduceLeft(_ ++ _))
+      systemOverviewIOSeq.map(_.reduceLeft(_ ++ _))
     }
   }
 
