@@ -63,7 +63,7 @@ case class SensorStatistics(
     failedMeasurements: Int,
     minMeasurement: Int,
     maxMeasurement: Int,
-    avgMeasurement: BigDecimal
+    sumOfMeasurements: Long
 ) {
   def +(that: SensorStatistics): SensorStatistics =
     if (sensorId == that.sensorId) {
@@ -74,17 +74,15 @@ case class SensorStatistics(
         validMeasurements = totalMeasurements,
         minMeasurement = minMeasurement.min(that.minMeasurement),
         maxMeasurement = maxMeasurement.max(that.maxMeasurement),
-        avgMeasurement = if (totalMeasurements != 0)
-          (weightedMeasurements + that.weightedMeasurements) / totalMeasurements
-        else 0d
+        sumOfMeasurements = sumOfMeasurements + that.sumOfMeasurements
       )
     } else sys.error("Only of the same sensor can be added")
 
   def +(that: Option[SensorStatistics]): SensorStatistics =
     that.map { t => this + t }.getOrElse(this)
 
-  private def weightedMeasurements: BigDecimal =
-    validMeasurements * avgMeasurement
+  lazy val avgMeasurement: BigDecimal =
+    BigDecimal(sumOfMeasurements) / validMeasurements
 }
 
 object SensorStatistics {
@@ -98,7 +96,7 @@ object SensorStatistics {
       validMeasurements = validMeasurements,
       minMeasurement = measurement.getOrElse(100),
       maxMeasurement = measurement.getOrElse(0),
-      avgMeasurement = measurement.map(BigDecimal(_)).sum
+      sumOfMeasurements = measurement.getOrElse(0).toLong
     )
   }
 }
