@@ -38,7 +38,7 @@ case class SystemOverview(
     (withStrings ++ withoutStrings).mkString("\n")
   }
 
-  def prettyString: String =
+  lazy val prettyString: String =
     s"""
        |Num of processed files: $processedFiles
        |Num of processed measurements: $processedMeasurements
