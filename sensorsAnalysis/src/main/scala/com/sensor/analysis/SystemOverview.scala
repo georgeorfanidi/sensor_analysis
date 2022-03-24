@@ -29,9 +29,9 @@ case class SystemOverview(
       sensorsMap.values.partition(_.validMeasurements > 0)
 
     val withStrings = withValidMeasurements.toSeq
-      .sortBy(s => -s.avgMeasurement)
+      .sortBy(s => s.avgMeasurement.map(s => -s))
       .map(m =>
-        s"${m.sensorId}, ${m.minMeasurement},${m.avgMeasurement},${m.maxMeasurement}"
+        s"${m.sensorId}, ${m.minMeasurement},${m.avgMeasurement.mkString},${m.maxMeasurement}"
       )
     val withoutStrings =
       withoutValidMeasurements.map(m => s"${m.sensorId},NaN,NaN,NaN")
@@ -81,8 +81,10 @@ case class SensorStatistics(
   def +(that: Option[SensorStatistics]): SensorStatistics =
     that.map { t => this + t }.getOrElse(this)
 
-  lazy val avgMeasurement: BigDecimal =
-    BigDecimal(sumOfMeasurements) / validMeasurements
+  lazy val avgMeasurement: Option[BigDecimal] =
+    Option.when(validMeasurements > 0) {
+      BigDecimal(sumOfMeasurements) / validMeasurements
+    }
 }
 
 object SensorStatistics {
